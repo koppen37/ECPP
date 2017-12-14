@@ -10,7 +10,7 @@ DiscriminantSort := function(a,b)
 	end if;
 end function;
 
-upperbound := PreviousPrime(10^6);
+upperbound := 2^18;
 primes := PrimesUpTo(upperbound);
 discriminants := Sort(SetToSequence({FundamentalDiscriminant(x) : x in [-1..-500 by -1]}), func<x,y | DiscriminantSort(x,y) >);
 
@@ -28,7 +28,7 @@ FactorToQ := function(m)
 			m div:= p;
 		end while;
 		
-		if p gt m then
+		if p^2 gt m then
 			break;
 		end if;
 	end for;
@@ -53,6 +53,10 @@ FactorToQs := function(orders)
 			while orders[i] mod p eq 0 do
 				orders[i] div:= p;
 			end while;
+			if IsProbablePrime(orders[i]) then
+				index := i;
+				break p;
+			end if;
 		end for;
 		
 		done := 0;
@@ -84,7 +88,7 @@ RandomPointOnCurve := function(a,b,n)
 
 	y := Modsqrt(Q,n);
 	if Modexp(y,2,n) ne Q then
-		print "In RandomPointOnCurve: found a divisor of ", n;
+		"In RandomPointOnCurve: found a divisor of ", n;
 	end if;
 
 	return [x,y];
@@ -102,7 +106,7 @@ OrderOfPoint := function(E,a,b,m,n,q,D)
 
 	V := q*U; 
 	if U eq E ! 0 then
-		print "In OrderOfPoint:", n, "is composite";
+		"In OrderOfPoint:", n, "is composite";
 	end if;
 
 	//Adhere to the magma certificate
@@ -114,7 +118,10 @@ end function;
 // Naive implementation of recursive step in ECPP
 // Return: certificate for this step (same as OrderOfPoint)
 StepNaiveECPP := function(n)
-	repeat //Add counter to this loop to give up.
+	lb_q := (Root(n,4) + 1)^2;
+	sqrt_n := SquareRoot(n);
+
+	repeat
 		repeat
 		 a := Random(0,n-1);
 		 b := Random(0,n-1);
@@ -125,13 +132,13 @@ StepNaiveECPP := function(n)
 		m := #E;
 
 		//Check if correct order of points.
-		if m lt (n + 1 - 2 * SquareRoot(n)) or m gt (n + 1 + 2*SquareRoot(n)) then
+		if m lt (n + 1 - 2 * sqrt_n) or m gt (n + 1 + 2 * sqrt_n) then
 			print "In StepNaiveECPP: n composite, wrong order for E";
 			break;
 		end if;
 
 		q := FactorToQ(m);
-	until q gt (Root(n,4) + 1)^2 and q lt n and IsProbablePrime(q);
+	until q gt lb_q and q lt n and IsProbablePrime(q);
 
 	return OrderOfPoint(E,a,b,m,n,q,4*a^3 + 27*b^2 mod n);
 end function;
@@ -142,6 +149,7 @@ end function;
 //					-1,-1 in case of failure
 OrderParameters := function(D,p)
 	field := FiniteField(p);
+
 	if p eq 2 then
 		if IsSquare(field ! D+8) then
 			return Sqrt(D+8),1;
@@ -182,6 +190,7 @@ end function;
 // Return: list of parameters <a,b> that correspond to a order each
 CurveParameters := function(D,p)
 	//Generate random quadratic (cube) nonresidue
+	field := FiniteField(p);
 	g := 0;
 
 	if p mod 4 eq 3 then
@@ -190,7 +199,6 @@ CurveParameters := function(D,p)
 		g := 2;
 	end if;
 		
-	field := FiniteField(p);
 	i := 1;
 	while g eq 0 or IsSquare(field ! g) or (D eq -3 and p mod 3 eq 1 and Modexp(g,(p-1) div 3,p) eq 1) do 
 		if i le #primes then
@@ -220,9 +228,9 @@ end function;
 // ECPP, where curve is created after finding a suitable m
 // Return: certificate for this step (same as OrderOfPoint)
 StepECPP := function (n)
-	// print "Start";
+	lb_q := (Root(n,4) + 1)^2;
+
 	for d in discriminants do 
-		// print "Start OrderParameters";
 		u, v := OrderParameters(d,n);
 		if u eq -1 and v eq -1 then
 			continue d;
@@ -236,34 +244,34 @@ StepECPP := function (n)
 			orders := [n + 1 + u, n + 1 - u];
 		end if;
 
-		// for o in orders do
-			print "Start factor";
-			//q := FactorToQ(o);
-			index,qorders := FactorToQs(orders);
-			if index eq -1 then
-				for i := 1 to #qorders do
-					if IsProbablePrime(qorders[i]) then
-						q := qorders[i];
-						index := i;
-						break;
-					end if;
-				end for;
-				if index eq -1 then
-					continue d;
-				end if;
-			else
-				q := qorders[index];
-			end if;
+		for o in orders do
+			q := FactorToQ(o);
+			// index, qs := FactorToQs(orders); //-1 als geen 
+			// if index eq -1 then
+			// 	for i := 1 to #qs do
+			// 		if IsProbablePrime(qs[i]) then
+			// 			q := qs[i];
+			// 			index := i;
+			// 			break;
+			// 		end if;
+			// 	end for;
 
-			if q gt (Root(n,4) + 1)^2 and q lt n and IsProbablePrime(q) then
-				// print "Start CurveParamters";
+			// 	//No suitable candidate found
+			// 	if index eq -1 then
+			// 		continue d;
+			// 	end if;
+			// else
+			// 	q := qs[index];
+			// end if;
+
+			if q gt lb_q and q lt n and IsProbablePrime(q) then
 				params := CurveParameters(d,n);
 				D := d; 
-				// m := o;
-				m := orders[index];
+				m := o;
+				// m := orders[index];
 				break d;
 			end if;
-		// end for;
+		end for;
 	end for;
 
 	curves := [ <EllipticCurve([FiniteField(n) ! par[1],par[2]]),IntegerRing() ! par[1],IntegerRing() ! par[2]> : par in params];
@@ -287,7 +295,10 @@ end function;
 //Output: Prime certificate that can be checked with IsPrimeCertificate
 ECPP := function(n,fast)
 	cert := [* *];
+	"Creating primes up to:", upperbound;
+	i := 0;
 	repeat
+		printf "N_%o has %o digits\n", i, Floor(Log(10,n));
 		if fast then
 			step := StepECPP(n);
 		else 
@@ -297,7 +308,7 @@ ECPP := function(n,fast)
 
 		//New value to check
 		n := step[7][1][1];
-		print n;
+		i +:= 1;
 	until n lt upperbound;
 	return cert;
 end function;
@@ -319,11 +330,12 @@ TimeDiff := procedure(p)
 end procedure;
 
 // Run ECPP for 10^a to 10^b with stepsize c
-// Also checks that certificate is indeed valid.
+// Also checks that the certificate is indeed valid.
 RunFor := procedure(a,b,c) 
 	for i := a to b by c do
 		print "\n\ni: ", i;
-		time cert := ECPP(NextPrime(10^i), true);
+		p := NextPrime(10^i);
+		time cert := ECPP(NextPrime(p), true);
 		IsPrimeCertificate(cert : ShowCertificate := false, Trust := upperbound);
 	end for;
 end procedure;
