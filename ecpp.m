@@ -10,7 +10,7 @@ DiscriminantSort := function(a,b)
 	end if;
 end function;
 
-upperbound := 2^18;
+upperbound := 10^6;
 primes := PrimesUpTo(upperbound);
 discriminants := Sort(SetToSequence({FundamentalDiscriminant(x) : x in [-1..-500 by -1]}), func<x,y | DiscriminantSort(x,y) >);
 
@@ -26,8 +26,8 @@ FactorToQ := function(m)
 
 		while m mod p eq 0 do
 			m div:= p;
-		end while;
-		
+		end while
+;		
 		if p^2 gt m then
 			break;
 		end if;
@@ -231,6 +231,10 @@ StepECPP := function (n)
 	lb_q := (Root(n,4) + 1)^2;
 
 	for d in discriminants do 
+		if JacobiSymbol(d,n) ne 1 then
+			continue d;
+		end if;
+
 		u, v := OrderParameters(d,n);
 		if u eq -1 and v eq -1 then
 			continue d;
@@ -295,10 +299,10 @@ end function;
 //Output: Prime certificate that can be checked with IsPrimeCertificate
 ECPP := function(n,fast)
 	cert := [* *];
-	"Creating primes up to:", upperbound;
 	i := 0;
 	repeat
 		printf "N_%o has %o digits\n", i, Floor(Log(10,n));
+		n;
 		if fast then
 			step := StepECPP(n);
 		else 
@@ -331,11 +335,17 @@ end procedure;
 
 // Run ECPP for 10^a to 10^b with stepsize c
 // Also checks that the certificate is indeed valid.
-RunFor := procedure(a,b,c) 
+RunFor := function(a,b,c)
+	certs := [];
+
 	for i := a to b by c do
 		print "\n\ni: ", i;
+		"Finding next prime";
 		p := NextPrime(10^i);
-		time cert := ECPP(NextPrime(p), true);
+		time cert := ECPP(p, true);
 		IsPrimeCertificate(cert : ShowCertificate := false, Trust := upperbound);
 	end for;
-end procedure;
+	Append(~certs,cert);
+
+	return certs;
+end function;
