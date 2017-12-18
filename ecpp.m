@@ -12,7 +12,7 @@ end function;
 
 upperbound := 10^6;
 primes := PrimesUpTo(upperbound);
-discriminants := Sort(SetToSequence({FundamentalDiscriminant(x) : x in [-1..-500 by -1]}), func<x,y | DiscriminantSort(x,y) >);
+discriminants := Sort(SetToSequence({FundamentalDiscriminant(x) : x in [-1..-10^4 by -1]}), func<x,y | DiscriminantSort(x,y) >);
 
 //Check if m can be factored into small primes and probable prime q
 //Input: m (the order of an Elliptic Curve E)
@@ -244,7 +244,6 @@ ECPP := function(n,fast)
 	i := 0;
 	repeat
 		printf "N_%o has %o digits\n", i, Floor(Log(10,n));
-		n;
 		if fast then
 			step := StepECPP(n);
 		else 
