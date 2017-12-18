@@ -36,47 +36,6 @@ FactorToQ := function(m)
 	return m;
 end function;
 
-//Factor all orders at once
-FactorToQs := function(orders)
-	index := -1;
-
-	for p in primes do
-		//Check if remaining is exactly a known prime p
-		for i:= 1 to #orders do
-			if p eq orders[i] then
-				index := i;
-				break p;
-			end if;
-		end for;
-
-		for i := 1 to #orders do
-			while orders[i] mod p eq 0 do
-				orders[i] div:= p;
-			end while;
-			if IsProbablePrime(orders[i]) then
-				index := i;
-				break p;
-			end if;
-		end for;
-		
-		done := 0;
-		for i := 1 to #orders do
-			if p gt orders[i] then
-				done +:= 1;
-			end if;
-		end for;
-		if done eq #orders then
-			break;
-		end if;
-	end for;
-
-	if index eq -1 then
-		return -1,orders;
-	else
-		return index,orders;
-	end if;
-end function;
-
 //Create a random point on a curve with parameters a,b module n
 //Input: a,b (curve parameters of E in Weiestrass form), n (order of FiniteField on which E is defined)
 //Output: Point on E[a,b] mod n
@@ -250,23 +209,6 @@ StepECPP := function (n)
 
 		for o in orders do
 			q := FactorToQ(o);
-			// index, qs := FactorToQs(orders); //-1 als geen 
-			// if index eq -1 then
-			// 	for i := 1 to #qs do
-			// 		if IsProbablePrime(qs[i]) then
-			// 			q := qs[i];
-			// 			index := i;
-			// 			break;
-			// 		end if;
-			// 	end for;
-
-			// 	//No suitable candidate found
-			// 	if index eq -1 then
-			// 		continue d;
-			// 	end if;
-			// else
-			// 	q := qs[index];
-			// end if;
 
 			if q gt lb_q and q lt n and IsProbablePrime(q) then
 				params := CurveParameters(d,n);
