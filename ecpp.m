@@ -243,7 +243,7 @@ ECPP := function(n,fast)
 	cert := [* *];
 	i := 0;
 	repeat
-		printf "N_%o has %o digits\n", i, Floor(Log(10,n));
+		printf "N_%o: \t %o digits\n", i, Floor(Log(10,n));
 		if fast then
 			step := StepECPP(n);
 		else 
@@ -276,7 +276,7 @@ end procedure;
 
 // Run ECPP for 10^a to 10^b with stepsize c
 // Also checks that the certificate is indeed valid.
-RunFor := function(a,b,c)
+RunFor := procedure(a,b,c,~certs)
 	certs := [];
 
 	for i := a to b by c do
@@ -287,6 +287,4 @@ RunFor := function(a,b,c)
 		IsPrimeCertificate(cert : ShowCertificate := false, Trust := upperbound);
 	end for;
 	Append(~certs,cert);
-
-	return certs;
-end function;
+end procedure;
