@@ -214,18 +214,17 @@ StepECPP := function (n)
 				params := CurveParameters(d,n);
 				D := d; 
 				m := o;
-				// m := orders[index];
 				break d;
 			end if;
 		end for;
 	end for;
 
-	curves := [ <EllipticCurve([FiniteField(n) ! par[1],par[2]]),IntegerRing() ! par[1],IntegerRing() ! par[2]> : par in params];
+	// curves := [ <EllipticCurve([FiniteField(n) ! par[1],par[2]]),IntegerRing() ! par[1],IntegerRing() ! par[2]> : par in params];
 
-	for i in [1..#curves] do
-		E := curves[i][1];
-		a := curves[i][2];
-		b := curves[i][3];
+	for par in params do
+		a := IntegerRing() ! par[1];
+		b := IntegerRing() ! par[2];
+		E := EllipticCurve([FiniteField(n) ! a,b]);
 
 		P := E ! RandomPointOnCurve(a,b,n);
 		if m*P eq E ! 0 then
@@ -261,17 +260,35 @@ end function;
 // Run both implementations for value p and print the times
 // Should give an impression about the variations in runs and the difference in speed between the implementations
 TimeDiff := procedure(p)
-	print "Not completely naive ECPP:";
-	for i in [1..10] do
-		time a:= ECPP(p,true);
-		IsPrimeCertificate(a);
+	printf "Prime of %o digits: %o\n", Floor(Log(10,p)), p;
+	printf "Naive ECPP:\t\t";
+	time for i:= 1 to 10 do
+		a:= ECPP(p,false);
+		if IsPrimeCertificate(a) then
+			printf ".";
+		else
+			printf "Something went wrong at %o", i ;
+		end if;
+
+		if i eq 10 then 
+			printf "\t";
+		end if;
+	end for;
+	
+	printf "Less naive ECPP:\t";
+	time for i := 1 to 10 do
+		a:= ECPP(p,true);
+		if IsPrimeCertificate(a) then
+			printf ".";
+		else
+			printf "Something went wrong at %o", i ;
+		end if;
+
+		if i eq 10 then 
+			printf "\t";
+		end if;
 	end for;
 
-	print "Naive ECPP: ";
-	for i in [1..10] do
-		time a:= ECPP(p,false);
-		IsPrimeCertificate(a);
-	end for;
 end procedure;
 
 // Run ECPP for 10^a to 10^b with stepsize c
