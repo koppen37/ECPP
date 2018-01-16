@@ -26,8 +26,8 @@ FactorToQ := function(m)
 
 		while m mod p eq 0 do
 			m div:= p;
-		end while
-;		
+		end while;
+				
 		if p^2 gt m then
 			break;
 		end if;
@@ -36,7 +36,7 @@ FactorToQ := function(m)
 	return m;
 end function;
 
-//Create a random point on a curve with parameters a,b module n
+//Create a random point on a curve with parameters a,b modulo n
 //Input: a,b (curve parameters of E in Weiestrass form), n (order of FiniteField on which E is defined)
 //Output: Point on E[a,b] mod n
 RandomPointOnCurve := function(a,b,n)
@@ -89,13 +89,6 @@ StepNaiveECPP := function(n)
 
 		E := EllipticCurve([FiniteField(n) | a, b]);
 		m := #E;
-
-		//Check if correct order of points.
-		if m lt (n + 1 - 2 * sqrt_n) or m gt (n + 1 + 2 * sqrt_n) then
-			print "In StepNaiveECPP: n composite, wrong order for E";
-			break;
-		end if;
-
 		q := FactorToQ(m);
 	until q gt lb_q and q lt n and IsProbablePrime(q);
 
@@ -219,8 +212,6 @@ StepECPP := function (n)
 		end for;
 	end for;
 
-	// curves := [ <EllipticCurve([FiniteField(n) ! par[1],par[2]]),IntegerRing() ! par[1],IntegerRing() ! par[2]> : par in params];
-
 	for par in params do
 		a := IntegerRing() ! par[1];
 		b := IntegerRing() ! par[2];
@@ -236,14 +227,17 @@ StepECPP := function (n)
 end function;
 
 //Iteratibly calls StepNaiveECPP/StepECPP 
-//Input: n (starting value we want to prove prime), fast (false: use StepNaiveECPP, true: use StepECPP)
-//Output: Prime certificate that can be checked with IsPrimeCertificate
-ECPP := function(n,fast)
+//Input: n (starting value we want to prove prime), Fast (false: use StepNaiveECPP, true: use StepECPP), Verbose (print number of digits of current prime)
+//Output: Prime certificate that can be checked with IsPrimeCertificate function
+ECPP := function(n : Fast := true, Verbose := true)
 	cert := [* *];
 	i := 0;
 	repeat
-		printf "N_%o: \t %o digits\n", i, Floor(Log(10,n));
-		if fast then
+		if Verbose then 
+			printf "N_%o: \t %o digits\n", i, Floor(Log(10,n));
+		end if;
+
+		if Fast then
 			step := StepECPP(n);
 		else 
 			step := StepNaiveECPP(n);
@@ -263,7 +257,7 @@ TimeDiff := procedure(p)
 	printf "Prime of %o digits: %o\n", Floor(Log(10,p)), p;
 	printf "Naive ECPP:\t\t";
 	time for i:= 1 to 10 do
-		a:= ECPP(p,false);
+		a:= ECPP(p: Fast := false,Verbose := false);
 		if IsPrimeCertificate(a) then
 			printf ".";
 		else
@@ -277,7 +271,7 @@ TimeDiff := procedure(p)
 	
 	printf "Less naive ECPP:\t";
 	time for i := 1 to 10 do
-		a:= ECPP(p,true);
+		a:= ECPP(p: Verbose := false);
 		if IsPrimeCertificate(a) then
 			printf ".";
 		else
@@ -293,6 +287,7 @@ end procedure;
 
 // Run ECPP for 10^a to 10^b with stepsize c
 // Also checks that the certificate is indeed valid.
+// After running, certs, contains all the certificates
 RunFor := procedure(a,b,c,~certs)
 	certs := [];
 
@@ -300,7 +295,7 @@ RunFor := procedure(a,b,c,~certs)
 		print "\n\ni: ", i;
 		"Finding next prime";
 		p := NextPrime(10^i);
-		time cert := ECPP(p, true);
+		time cert := ECPP(p);
 		IsPrimeCertificate(cert : ShowCertificate := false, Trust := upperbound);
 	end for;
 	Append(~certs,cert);
